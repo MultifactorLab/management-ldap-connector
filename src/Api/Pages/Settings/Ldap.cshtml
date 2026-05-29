@@ -1,0 +1,264 @@
+@page "/settings/ldap"
+@model Api.Pages.Settings.LdapModel
+@{
+    ViewData["Title"] = "Настройки LDAP";
+    ViewData["ActivePage"] = "ldap";
+}
+
+<div class="card">
+    <div class="card-header">
+        <h1>Настройки LDAP</h1>
+        <p>Параметры подключения к каталогу Active Directory / LDAP</p>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success">@Model.SuccessMessage</div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-error">@Model.ErrorMessage</div>
+    }
+
+    <form method="post" id="ldap-form">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Адрес сервера</label>
+                <input type="text" asp-for="ServerUrl" placeholder="company.local"/>
+                <span asp-validation-for="ServerUrl" class="field-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Порт</label>
+                <input type="number" asp-for="Port" placeholder="389"/>
+                <span asp-validation-for="Port" class="field-error"></span>
+            </div>
+
+            <div class="form-group form-group-full">
+                <div class="toggle-group">
+                    <input type="checkbox" id="useSsl" asp-for="UseSsl"/>
+                    <label for="useSsl">Использовать SSL</label>
+                </div>
+            </div>
+
+            <div class="form-group form-group-full">
+                <label>Base DN</label>
+                <input type="text" asp-for="BaseDn" placeholder="DC=company,DC=local"/>
+                <span asp-validation-for="BaseDn" class="field-error"></span>
+            </div>
+
+            <div class="form-group form-group-full">
+                <label>Bind DN</label>
+                <input type="text" asp-for="ServiceAccountDn" placeholder="CN=svc-ldap,OU=Service,DC=company,DC=local"/>
+                <span class="field-hint">Служебный аккаунт для подключения к каталогу</span>
+                <span asp-validation-for="ServiceAccountDn" class="field-error"></span>
+            </div>
+
+            <div class="form-group form-group-full">
+                <label>Пароль Bind DN</label>
+                <div class="input-wrap">
+                    <input type="text"
+                           id="BindPassword"
+                           name="BindPassword"
+                           class="has-toggle"
+                           placeholder="Пароль служебного аккаунта"
+                           autocomplete="off"
+                           spellcheck="false"
+                           value="@Model.BindPassword"/>
+                    <button type="button" class="toggle-password"
+                            onclick="toggleMask()" tabindex="-1"
+                            id="toggle-pwd-btn">
+                        <svg id="eye-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        <svg id="eye-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                            <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
+                            <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                        </svg>
+                    </button>
+                </div>
+                <span asp-validation-for="BindPassword" class="field-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Атрибут имени пользователя</label>
+                <input type="text" asp-for="UsernameAttribute" placeholder="sAMAccountName"/>
+                <span class="field-hint">Используется для аутентификации и как ProviderKey в MGM</span>
+                <span asp-validation-for="UsernameAttribute" class="field-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Атрибут email</label>
+                <input type="text" asp-for="EmailAttribute" placeholder="mail"/>
+                <span asp-validation-for="EmailAttribute" class="field-error"></span>
+            </div>
+
+            <div class="form-group form-group-full">
+                <label>Атрибут отображаемого имени</label>
+                <input type="text" asp-for="DisplayNameAttribute" placeholder="displayName"/>
+                <span asp-validation-for="DisplayNameAttribute" class="field-error"></span>
+            </div>
+
+            <div class="form-group form-group-full">
+                <label>DN группы для синхронизации</label>
+                <input type="text" asp-for="SyncGroupDn"
+                       placeholder="CN=MGM Admins,OU=Groups,DC=company,DC=local"/>
+                <span class="field-hint">
+                    Необязательно. Если не задан — синхронизируются все пользователи из Base DN
+                </span>
+                <span asp-validation-for="SyncGroupDn" class="field-error"></span>
+            </div>
+        </div>
+
+        <div id="test-result" class="alert" style="display:none;"></div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <button type="button" class="btn btn-secondary" id="test-btn" onclick="testConnection()">
+                Проверить подключение
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // ── Маска пароля ──────────────────────────────────────────
+    const pwdInput = document.getElementById('BindPassword');
+    let realValue = pwdInput.value;
+    let masked = true;
+    let isComposing = false;
+
+    // Инициализация — показываем маску если есть значение
+    if (realValue.length > 0) renderMask();
+
+    function renderMask() {
+        const sel = pwdInput.selectionStart;
+        pwdInput.value = '•'.repeat(realValue.length);
+        try { pwdInput.setSelectionRange(sel, sel); } catch {}
+    }
+
+    // Используем beforeinput — он даёт нам данные ДО изменения
+    pwdInput.addEventListener('beforeinput', function (e) {
+        if (!masked || isComposing) return;
+        e.preventDefault();
+
+        const start = this.selectionStart;
+        const end = this.selectionEnd;
+
+        if (e.inputType === 'insertText' && e.data) {
+            realValue = realValue.slice(0, start) + e.data + realValue.slice(end);
+            renderMask();
+            const pos = start + e.data.length;
+            this.setSelectionRange(pos, pos);
+
+        } else if (e.inputType === 'deleteContentBackward') {
+            if (start === end && start > 0) {
+                realValue = realValue.slice(0, start - 1) + realValue.slice(start);
+                renderMask();
+                this.setSelectionRange(start - 1, start - 1);
+            } else if (start !== end) {
+                realValue = realValue.slice(0, start) + realValue.slice(end);
+                renderMask();
+                this.setSelectionRange(start, start);
+            }
+
+        } else if (e.inputType === 'deleteContentForward') {
+            if (start === end && start < realValue.length) {
+                realValue = realValue.slice(0, start) + realValue.slice(start + 1);
+                renderMask();
+                this.setSelectionRange(start, start);
+            } else if (start !== end) {
+                realValue = realValue.slice(0, start) + realValue.slice(end);
+                renderMask();
+                this.setSelectionRange(start, start);
+            }
+        }
+    });
+
+    // Вставка через Ctrl+V
+    pwdInput.addEventListener('paste', function (e) {
+        if (!masked) return;
+        e.preventDefault();
+        const text = e.clipboardData.getData('text/plain');
+        const start = this.selectionStart;
+        const end = this.selectionEnd;
+        realValue = realValue.slice(0, start) + text + realValue.slice(end);
+        renderMask();
+        const pos = start + text.length;
+        this.setSelectionRange(pos, pos);
+    });
+
+    // Если не маска — просто синхронизируем realValue
+    pwdInput.addEventListener('input', function () {
+        if (!masked) realValue = this.value;
+    });
+
+    // Блокируем копирование при маске
+    pwdInput.addEventListener('copy', function (e) {
+        if (masked) e.preventDefault();
+    });
+
+    pwdInput.addEventListener('cut', function (e) {
+        if (masked) e.preventDefault();
+    });
+
+    function toggleMask() {
+        masked = !masked;
+        if (masked) {
+            renderMask();
+        } else {
+            pwdInput.value = realValue;
+        }
+        document.getElementById('eye-open').style.display  = masked ? 'block' : 'none';
+        document.getElementById('eye-closed').style.display = masked ? 'none'  : 'block';
+        pwdInput.focus();
+    }
+
+    function getRealPassword() { return realValue; }
+
+    // Перед отправкой формы подставляем реальное значение
+    document.getElementById('ldap-form').addEventListener('submit', function () {
+        pwdInput.value = realValue;
+    });
+
+    // ── Тест подключения ──────────────────────────────────────
+    async function testConnection() {
+        const btn = document.getElementById('test-btn');
+        const resultEl = document.getElementById('test-result');
+
+        btn.disabled = true;
+        btn.textContent = 'Проверяем...';
+        resultEl.style.display = 'none';
+
+        const savedDisplay = pwdInput.value;
+        pwdInput.value = realValue;
+
+        try {
+            const data = new FormData(document.getElementById('ldap-form'));
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            const response = await fetch('?handler=Test', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token },
+                body: data
+            });
+
+            const result = await response.json();
+
+            resultEl.className = `alert ${result.success ? 'alert-success' : 'alert-error'}`;
+            resultEl.textContent = result.message;
+            resultEl.style.display = 'block';
+        } catch {
+            resultEl.className = 'alert alert-error';
+            resultEl.textContent = 'Ошибка при выполнении запроса.';
+            resultEl.style.display = 'block';
+        } finally {
+            pwdInput.value = savedDisplay;
+            btn.disabled = false;
+            btn.textContent = 'Проверить подключение';
+        }
+    }
+</script>

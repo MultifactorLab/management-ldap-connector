@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    
+    <ItemGroup>
+        <Using Include="Xunit"/>
+    </ItemGroup>
+    
+    <ItemGroup>
+      <PackageReference Include="LiteDB" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <ProjectReference Include="..\..\Infra\Infra.csproj" />
+    </ItemGroup>
+
+</Project>

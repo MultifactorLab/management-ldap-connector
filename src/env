@@ -1,0 +1,3 @@
+ADMIN__DEFAULTPASSWORD=your_password
+ENCRYPTION__KEY=base64_256bit_key
+LITEDB__PATH=/data/storage.db

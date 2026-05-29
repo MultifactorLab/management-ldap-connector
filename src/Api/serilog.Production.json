@@ -1,0 +1,34 @@
+﻿{
+  "Serilog": {
+    "Using": [
+      "Serilog.Sinks.Async",
+      "Serilog.Sinks.Console"
+    ],
+    "MinimumLevel": {
+      "Default": "Information",
+      "Override": {
+        "Microsoft": "Warning",
+        "System": "Warning"
+      }
+    },
+    "WriteTo": [
+      {
+        "Name": "Async",
+        "Args": {
+          "Configure": [
+            {
+              "Name": "Console",
+              "Args": {
+                "formatter": "Serilog.Formatting.Elasticsearch.ElasticsearchJsonFormatter, Serilog.Formatting.Elasticsearch"
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "Enrich": [
+      "FromLogContext",
+      "WithMachineName"
+    ]
+  }
+}

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>@ViewData["Title"] — LDAP Connector</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/site.css"/>
+</head>
+<body>
+<div class="layout">
+    <nav class="nav">
+        <a href="/settings/ldap" class="nav-brand">
+            <div class="nav-brand-icon">
+                <span></span><span></span><span></span><span></span>
+            </div>
+            <div class="nav-brand-name">LDAP Connector</div>
+        </a>
+
+        <div class="nav-links">
+            <a href="/settings/ldap" class="@(ViewData["ActivePage"]?.ToString() == "ldap" ? "active" : string.Empty)">Настройки LDAP</a>
+            <a href="/settings/sync" class="@(ViewData["ActivePage"]?.ToString() == "sync" ? "active" : string.Empty)">Синхронизация</a>
+            <a href="/sync/status" class="@(ViewData["ActivePage"]?.ToString() == "status" ? "active" : string.Empty)">Статус</a>
+            <a href="/settings/account" class="@(ViewData["ActivePage"]?.ToString() == "account" ? "active" : string.Empty)">Аккаунт</a>
+        </div>
+
+        <div class="nav-actions">
+            <form method="post" asp-page="/Logout">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-secondary" 
+                        style="height: 34px; padding: 0 14px; font-size: 13px;">
+                    Выйти
+                </button>
+            </form>
+        </div>
+    </nav>
+
+    <main class="main">
+        @RenderBody()
+    </main>
+</div>
+</body>
+</html>

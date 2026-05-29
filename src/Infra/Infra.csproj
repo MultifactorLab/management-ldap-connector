@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <ItemGroup>
+      <ProjectReference Include="..\App\App.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="BCrypt.Net-Next" />
+      <PackageReference Include="LiteDB" />
+      <PackageReference Include="Microsoft.Extensions.Http" />
+      <PackageReference Include="System.DirectoryServices.Protocols" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Infra.Tests" />
+        <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,59 @@
+@page "/sync/status"
+@model Api.Pages.Sync.StatusModel
+@{
+    ViewData["Title"] = "Статус синхронизации";
+    ViewData["ActivePage"] = "status";
+}
+
+<div class="card">
+    <div class="card-header">
+        <h1>Статус синхронизации</h1>
+        <p>Информация о последнем запуске и результатах синхронизации</p>
+    </div>
+
+    @if (Model.Status is null)
+    {
+        <div class="alert alert-warning">Синхронизация ещё не запускалась.</div>
+    }
+    else
+    {
+        <div class="info-grid">
+            <div class="info-cell">
+                <div class="info-cell-label">Последний запуск</div>
+                <div class="info-cell-value" style="font-size: 15px;">
+                    @(Model.Status.LastRunAt?.ToString("dd.MM.yyyy HH:mm") ?? "—")
+                </div>
+            </div>
+
+            <div class="info-cell">
+                <div class="info-cell-label">Синхронизировано</div>
+                <div class="info-cell-value">@Model.Status.SyncedCount</div>
+            </div>
+
+            <div class="info-cell">
+                <div class="info-cell-label">Статус</div>
+                <div style="margin-top: 6px;">
+                    @if (Model.Status.Success)
+                    {
+                        <span class="badge badge-success">Успешно</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-error">Ошибка</span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (!Model.Status.Success && !string.IsNullOrEmpty(Model.Status.ErrorMessage))
+        {
+            <div class="alert alert-error">@Model.Status.ErrorMessage</div>
+        }
+    }
+
+    <div class="form-actions" style="border-top: none; margin-top: 0; padding-top: 0;">
+        <form method="post">
+            <button type="submit" class="btn btn-primary">Запустить синхронизацию</button>
+        </form>
+    </div>
+</div>
