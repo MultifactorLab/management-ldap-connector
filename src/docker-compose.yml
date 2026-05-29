@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   ldap-connector:
-    image: ${DOCKER_REGISTRY-}mf-ldap-connector
-    container_name: mf-ldap-connector
+    image: ${DOCKER_REGISTRY-}mgm-ldap-connector
+    container_name: mgm-ldap-connector
     env_file:
       - .env
     environment:
